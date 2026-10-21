@@ -10,6 +10,7 @@ on:
       - main
       - lab3-refactoring
   workflow_dispatch:
+
 permissions:
   contents: read
 
