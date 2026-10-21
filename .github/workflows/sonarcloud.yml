@@ -1,16 +1,15 @@
-
-
 name: Build, Test and SonarCloud
 
 on:
   push:
     branches:
+      - main
       - lab3-refactoring
   pull_request:
     branches:
+      - main
       - lab3-refactoring
   workflow_dispatch:
-
 permissions:
   contents: read
 
