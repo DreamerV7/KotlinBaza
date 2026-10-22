@@ -1,0 +1,47 @@
+
+
+name: Build, Test and SonarCloud
+
+on:
+  push:
+    branches:
+      - lab3-refactoring
+  pull_request:
+    branches:
+      - lab3-refactoring
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-test-analyze:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Kotlin compiler
+        uses: fwilhe2/setup-kotlin@v2.0
+        with:
+          version: '2.4.20'
+
+      - name: Build project
+        run: ./build.sh
+
+      - name: Run tests
+        run: ./test.sh
+
+      - name: SonarCloud analysis
+        uses: SonarSource/sonarqube-scan-action@v6
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
