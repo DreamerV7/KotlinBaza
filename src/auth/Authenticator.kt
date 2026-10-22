@@ -3,16 +3,16 @@ class Authenticator(
     private val userRepository: UserRepository,
     private val passwordHasher: PasswordHasher
 ) {
-    fun authenticate(login: String, password: String): Int {
+    fun authenticate(login: String, password: String): AccessResult {
         val user = userRepository.findByLogin(login)
-            ?: return INVALID_LOGIN
+            ?: return AccessResult.INVALID_LOGIN
 
         val passwordHash = passwordHasher.hash(password, user.salt)
 
         if (passwordHash != user.passwordHash) {
-            return INVALID_PASSWORD
+            return AccessResult.INVALID_PASSWORD
         }
 
-        return SUCCESS
+        return AccessResult.SUCCESS
     }
 }

@@ -1,4 +1,5 @@
-﻿class ActionRegistry(
+﻿
+class ActionRegistry(
     handlers: List<ActionHandler>
 ) {
     private val handlersByName = handlers.associateBy { it.name }
@@ -8,9 +9,9 @@
         login: String,
         resource: String,
         volume: Int
-    ): Int {
+    ): AccessResult {
         val handler = handlersByName[action]
-            ?: return UNKNOWN_ACTION
+            ?: return AccessResult.UNKNOWN_ACTION
 
         return handler.execute(login, resource, volume)
     }

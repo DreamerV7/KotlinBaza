@@ -1,4 +1,5 @@
-﻿class ResourceActionHandler(
+﻿
+class ResourceActionHandler(
     override val name: String,
     private val resourceRepository: ResourceRepository,
     private val accessPolicy: AccessPolicy
@@ -8,22 +9,22 @@
         login: String,
         resource: String,
         volume: Int
-    ): Int {
+    ): AccessResult {
         if (!ResourcePathValidator.isValid(resource) || volume < 0) {
-            return INVALID_FORMAT
+            return AccessResult.INVALID_FORMAT
         }
 
         val resourceInfo = resourceRepository.findByPath(resource)
-            ?: return RESOURCE_NOT_FOUND
+            ?: return AccessResult.RESOURCE_NOT_FOUND
 
         if (volume > resourceInfo.maxVolume) {
-            return VOLUME_EXCEEDED
+            return AccessResult.VOLUME_EXCEEDED
         }
 
         if (!accessPolicy.hasPermission(login, resource, name)) {
-            return ACCESS_DENIED
+            return AccessResult.ACCESS_DENIED
         }
 
-        return SUCCESS
+        return AccessResult.SUCCESS
     }
 }

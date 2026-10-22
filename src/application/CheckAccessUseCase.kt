@@ -1,4 +1,5 @@
-﻿class CheckAccessUseCase(
+﻿
+class CheckAccessUseCase(
     private val actionRegistry: ActionRegistry
 ) {
     fun execute(
@@ -6,7 +7,7 @@
         login: String,
         resource: String,
         volume: Int
-    ): Int {
+    ): AccessResult {
         return actionRegistry.execute(
             action = action,
             login = login,
