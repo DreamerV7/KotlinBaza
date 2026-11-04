@@ -36,10 +36,20 @@ jobs:
           version: '2.4.20'
 
       - name: Build project
-        run: ./build.sh
+        run: bash scripts/build.sh
 
       - name: Run tests
-        run: ./test.sh
+        run: bash scripts/test.sh
+
+      - name: Run CLI smoke tests
+        run: bash scripts/smoke-test.sh
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-results
+          path: out/test-results
 
       - name: SonarCloud analysis
         uses: SonarSource/sonarqube-scan-action@v6
