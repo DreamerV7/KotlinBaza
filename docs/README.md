@@ -1,4 +1,4 @@
-# Лабораторная работа №4
+# Лабораторная работа №5
 
 ## Авторы
 
@@ -20,7 +20,7 @@
 ## Требования
 
 Для сборки и запуска необходимы:
-- установленный JDK;
+- установленный JDK 17+ (`java` и `jar` в PATH);
 - компилятор Kotlin (`kotlinc`);
 - библиотека `kotlinx-cli`, расположенная в `lib/kotlinx-cli-jvm-0.3.6.jar`.
 
@@ -29,35 +29,35 @@
 Для сборки проекта используется скрипт:
 
 ```bash
-./build.sh
+bash scripts/build.sh
 ```
 
-После успешной сборки создаётся исполняемый файл `app.jar`.
+После успешной сборки создаётся исполняемый файл `out/app.jar`. Скрипты работают из любой текущей директории.
 
 ## Запуск
 
 Приложение можно запустить с помощью скрипта:
 
 ```bash
-./run.sh --login alice --password qwerty --action read --resource A.B.C --volume 10
+bash scripts/run.sh --login alice --password qwerty --action read --resource A.B.C --volume 10
 ```
 
 Также доступен запуск непосредственно через JAR:
 
 ```bash
-java -jar app.jar --login alice --password qwerty --action read --resource A.B.C --volume 10
+java -jar out/app.jar --login alice --password qwerty --action read --resource A.B.C --volume 10
 ```
 
 Для просмотра справки:
 
 ```bash
-./run.sh --help
+bash scripts/run.sh --help
 ```
 
 Или:
 
 ```bash
-java -jar app.jar --help
+java -jar out/app.jar --help
 ```
 
 ## Аргументы командной строки
@@ -90,7 +90,19 @@ java -jar app.jar --help
 Для запуска автоматических тестов используется команда:
 
 ```bash
-./test.sh
+bash scripts/test.sh
 ```
 
-Тесты проверяют успешный доступ, обработку справки, ошибки авторизации, неизвестные действия, отказ в доступе, отсутствие ресурса, некорректный формат и превышение допустимого объёма.
+JUnit проверяет авторизацию, наследование прав, валидацию путей, границы объёма, диспетчеризацию действий и SHA-256. Результаты сохраняются в `out/test-results`. Параметризованные сценарии считаются отдельно.
+
+Для проверок CLI после сборки:
+
+```bash
+bash scripts/smoke-test.sh
+```
+
+Используются только `kotlinc`, JDK и Bash (в Windows — Git Bash), без систем сборки. JUnit JAR-файлы находятся в `lib`, загрузка при запуске тестов не нужна. Для компиляции и запуска используется standalone JAR, включающий API, engine и зависимости JUnit. Отдельные API/engine JAR сохранены по требованию ТЗ; добавлять их вместе со standalone в classpath не нужно.
+
+В IntelliJ IDEA каталог `tests` уже отмечен как тестовый, библиотека JUnit5 подключена со scope TEST. Выберите установленный JDK в настройках Project SDK. В Windows добавьте каталог `bin` JDK в PATH, если команда `jar` не найдена.
+
+Анализ тестопригодности и результаты: [testable.md](testable.md). Источники и контрольные суммы зависимостей: [dependencies.md](dependencies.md).
