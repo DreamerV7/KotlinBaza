@@ -12,6 +12,11 @@ if [ ${#sources[@]} -eq 0 ]; then
 fi
 
 CLI_JAR="lib/kotlinx-cli-jvm-0.3.6.jar"
+H2_JAR="lib/h2-2.5.252.jar"
+if [ ! -f "$H2_JAR" ]; then
+    echo "H2 library not found: $H2_JAR" >&2
+    exit 1
+fi
 
 if [ ! -f "$CLI_JAR" ]; then
     echo "kotlinx-cli library not found: $CLI_JAR"
@@ -29,5 +34,11 @@ kotlinc "${sources[@]}" \
 MANIFEST_FILE="$(mktemp)"
 trap 'rm -f "$MANIFEST_FILE"' EXIT
 
-printf 'Class-Path: ../lib/kotlinx-cli-jvm-0.3.6.jar\n\n' > "$MANIFEST_FILE"
-jar ufm out/app.jar "$MANIFEST_FILE"
+printf 'Class-Path: ../lib/kotlinx-cli-jvm-0.3.6.jar ../lib/h2-2.5.252.jar\n\n' > "$MANIFEST_FILE"
+if command -v jar >/dev/null 2>&1; then
+    jar ufm out/app.jar "$MANIFEST_FILE"
+else
+    jdk_home="${JAVA_HOME:-$(java -XshowSettings:properties -version 2>&1 | sed -n 's/^[[:space:]]*java.home = //p' | tr -d '\r')}"
+    jdk_home="${jdk_home//\\//}"
+    "$jdk_home/bin/jar" ufm out/app.jar "$MANIFEST_FILE"
+fi

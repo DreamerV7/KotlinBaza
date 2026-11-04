@@ -1,10 +1,9 @@
-﻿class AppContainer {
-    private val userRepository = InMemoryUserRepository()
-    private val resourceRepository = InMemoryResourceRepository()
-    private val permissionRepository = InMemoryPermissionRepository()
-
-    private val passwordHasher = Sha256PasswordHasher()
-
+class AppContainer(
+    userRepository: UserRepository,
+    resourceRepository: ResourceRepository,
+    permissionRepository: PermissionRepository,
+    passwordHasher: PasswordHasher
+) {
     private val authenticator = Authenticator(
         userRepository,
         passwordHasher

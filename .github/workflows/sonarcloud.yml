@@ -6,9 +6,11 @@ on:
   push:
     branches:
       - lab3-refactoring
+      - lab6/jdbc-storage
   pull_request:
     branches:
       - lab3-refactoring
+      - lab5-unit-tests
   workflow_dispatch:
 
 permissions:
@@ -40,6 +42,9 @@ jobs:
 
       - name: Run tests
         run: bash scripts/test.sh
+
+      - name: Initialize local database
+        run: bash scripts/init-db.sh
 
       - name: Run CLI smoke tests
         run: bash scripts/smoke-test.sh
