@@ -1,18 +1,17 @@
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
-class ApplicationTest {
+class ApplicationTest : DatabaseTest() {
     @Test fun shouldAuthenticateConfiguredUserThroughUseCase() {
-        assertEquals(AccessResult.SUCCESS, AppContainer().authenticateUser.execute("alice", "qwerty"))
+        assertEquals(AccessResult.SUCCESS, app.authenticateUser.execute("alice", "qwerty"))
     }
     @Test fun shouldRejectWrongPasswordThroughUseCase() {
-        assertEquals(AccessResult.INVALID_PASSWORD, AppContainer().authenticateUser.execute("alice", "wrong"))
+        assertEquals(AccessResult.INVALID_PASSWORD, app.authenticateUser.execute("alice", "wrong"))
     }
     @Test fun shouldRejectUnknownUserThroughUseCase() {
-        assertEquals(AccessResult.INVALID_LOGIN, AppContainer().authenticateUser.execute("unknown", "qwerty"))
+        assertEquals(AccessResult.INVALID_LOGIN, app.authenticateUser.execute("unknown", "qwerty"))
     }
     @Test fun shouldWireAllThreeActions() {
-        val app = AppContainer()
         assertEquals(AccessResult.SUCCESS, app.checkAccess.execute("read", "alice", "A.B.C", 10))
         assertEquals(AccessResult.SUCCESS, app.checkAccess.execute("write", "alice", "A.B.C", 10))
         assertEquals(AccessResult.SUCCESS, app.checkAccess.execute("execute", "bob", "A.B.C", 100))
