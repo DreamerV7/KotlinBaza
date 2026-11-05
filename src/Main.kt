@@ -3,6 +3,7 @@ import kotlinx.cli.ArgParser
 import kotlinx.cli.ArgType
 import kotlinx.cli.required
 import kotlin.system.exitProcess
+import java.sql.SQLException
 
 const val SUCCESS = 0
 const val HELP = 1
@@ -13,6 +14,8 @@ const val ACCESS_DENIED = 5
 const val RESOURCE_NOT_FOUND = 6
 const val INVALID_FORMAT = 7
 const val VOLUME_EXCEEDED = 8
+const val DATABASE_CONNECTION_ERROR = 9
+const val SQL_QUERY_ERROR = 10
 
 fun AccessResult.toExitCode(): Int = when (this) {
     AccessResult.SUCCESS -> SUCCESS
@@ -92,19 +95,26 @@ fun main(args: Array<String>) {
     val parsedVolume = volume.toIntOrNull()
         ?: exitProcess(INVALID_FORMAT)
 
-    val app = AppContainer()
-
-    val authResult = app.authenticateUser.execute(login, password)
-    if (authResult != AccessResult.SUCCESS) {
-        exitProcess(authResult.toExitCode())
+    val code = try {
+        JdbcDatabase.connect().use { connection ->
+            val app = AppContainer(
+                JdbcUserRepository(connection),
+                JdbcResourceRepository(connection),
+                JdbcPermissionRepository(connection),
+                Sha256PasswordHasher()
+            )
+            val authResult = app.authenticateUser.execute(login, password)
+            if (authResult != AccessResult.SUCCESS) {
+                authResult.toExitCode()
+            } else {
+                app.checkAccess.execute(action, login, resource, parsedVolume).toExitCode()
+            }
+        }
+    } catch (_: DatabaseConnectionException) {
+        DATABASE_CONNECTION_ERROR
+    } catch (_: SQLException) {
+        SQL_QUERY_ERROR
     }
-
-    val result = app.checkAccess.execute(
-        action = action,
-        login = login,
-        resource = resource,
-        volume = parsedVolume
-    )
-
-    exitProcess(result.toExitCode())
+    // Exit only after Connection.use has closed the database.
+    exitProcess(code)
 }
