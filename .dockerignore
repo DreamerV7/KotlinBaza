@@ -1,0 +1,10 @@
+**
+!Dockerfile
+!out/
+!out/app.jar
+!lib/
+!lib/kotlinx-cli-jvm-0.3.6.jar
+!lib/h2-2.5.252.jar
+!scripts/
+!scripts/init.sql
+!scripts/fill.sql

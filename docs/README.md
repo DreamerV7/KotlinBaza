@@ -1,5 +1,27 @@
 # Лабораторная работа №6
 
+## CI/CD
+
+Основная ветка: `main`. Workflow `ci.yml` запускается при открытии и обновлении PR в `main`. Workflow `cd.yml` запускается при push в `main`. Оба вызывают `checks.yml`: сборка, JUnit, проверки CLI, JaCoCo и SonarCloud с ожиданием Quality Gate.
+
+CD использует JAR из артефакта проверок того же запуска и коммита. После сборки образ проверяется на коды 0 (доступ), 5 (отказ) и 1 (справка). Только после успешных проверок публикуются образ, GitHub Release и архив приложения. Тег образа `sha-<полный SHA коммита>`, тег релиза `build-<полный SHA коммита>`.
+
+GitHub Repository Secrets: `SONAR_TOKEN`, `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`. Repository Variable `DOCKERHUB_REPOSITORY` задаёт имя публичного репозитория образов. По умолчанию используется `<DOCKERHUB_USERNAME>/kotlinbaza`. Уведомления CI и CD отправляются в Telegram как при успехе, так и при ошибке.
+
+Локальная сборка и проверка Docker (нужен запущенный Docker Engine или Docker Desktop):
+
+```bash
+bash scripts/build.sh
+docker build -t kotlinbaza:local .
+bash scripts/docker-test.sh kotlinbaza:local
+docker run --rm kotlinbaza:local --login alice --password qwerty --action read --resource A.B.C --volume 10
+echo $?
+```
+
+Образ содержит JRE 17, приложение, JDBC-драйвер и начальную файловую базу H2. Аргументы передаются через exec ENTRYPOINT, коды завершения Java сохраняются. Изменения базы внутри контейнера с `--rm` не сохраняются после удаления контейнера.
+
+Архив для релиза создаётся командой `bash scripts/package.sh` после сборки. Распакуйте `out/release/kotlinbaza.tar.gz`, выполните `bash scripts/init-db.sh`, затем `bash scripts/run.sh` с аргументами. В архив включены приложение, библиотеки и скрипты инициализации. Это обычный JAR с зависимостями в `lib`, без бонусного fat JAR.
+
 ## Авторы
 
 Климов Дмитрий ПИ-241
