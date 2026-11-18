@@ -30,3 +30,9 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+### Local H2 database ###
+*.mv.db
+*.trace.db
+*.lock.db
+*.temp.db

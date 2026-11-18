@@ -1,0 +1,32 @@
+name: CI
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  checks:
+    uses: ./.github/workflows/checks.yml
+    secrets: inherit
+  docker:
+    needs: checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: checked-build
+          path: out
+      - run: docker build -t kotlinbaza:check .
+      - run: bash scripts/docker-test.sh kotlinbaza:check
+  notify:
+    if: always()
+    needs: [checks, docker]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash scripts/notify-telegram.sh
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          WORKFLOW_RESULT: CI checks=${{ needs.checks.result }}, docker=${{ needs.docker.result }}
