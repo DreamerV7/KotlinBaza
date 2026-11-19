@@ -21,7 +21,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: checked-build
-          path: out
+          path: .
       - name: Define image and release tag
         env:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}

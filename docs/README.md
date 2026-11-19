@@ -1,165 +1,85 @@
-# Лабораторная работа №6
+# Лабораторная работа №7
 
-## CI/CD
+Климов Дмитрий, ПИ-241.
 
-Публичный репозиторий образов: [skebobv7/kolek](https://hub.docker.com/r/skebobv7/kolek).
+Консольная проверка доступа к ресурсам. Spring Boot используется для DI и запуска, без веб-сервера, MVC, Security и ORM. Данные хранятся в файловой H2 через JDBC.
 
-Основная ветка: `main`. Workflow `ci.yml` запускается при открытии и обновлении PR в `main`. Workflow `cd.yml` запускается при push в `main`. Оба вызывают `checks.yml`: сборка, JUnit, проверки CLI, JaCoCo и SonarCloud с ожиданием Quality Gate.
+## Требования и сборка
 
-CD использует JAR из артефакта проверок того же запуска и коммита. После сборки образ проверяется на коды 0 (доступ), 5 (отказ) и 1 (справка). Только после успешных проверок публикуются образ, GitHub Release и архив приложения. Тег образа `sha-<полный SHA коммита>`, тег релиза `build-<полный SHA коммита>`.
+Нужен JDK 17 и интернет для первого скачивания Maven и зависимостей. Все зависимости и плагины объявлены в pom.xml. Wrapper фиксирует Maven 3.9.11.
 
-GitHub Repository Secrets: `SONAR_TOKEN`, `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`. Repository Variable `DOCKERHUB_REPOSITORY` задаёт имя публичного репозитория образов. По умолчанию используется `<DOCKERHUB_USERNAME>/kotlinbaza`. Уведомления CI и CD отправляются в Telegram как при успехе, так и при ошибке.
+```bash
+bash mvnw clean install
+bash scripts/build.sh
+bash scripts/init-db.sh
+bash scripts/run.sh --login alice --password qwerty --action read --resource A.B.C --volume 10
+echo $?
+```
 
-Локальная сборка и проверка Docker (нужен запущенный Docker Engine или Docker Desktop):
+В PowerShell можно использовать .\mvnw.cmd clean install. В IntelliJ IDEA откройте pom.xml как Maven-проект. Отдельный kotlinc и ручные JAR-файлы в lib не нужны.
+
+Spring Boot собирает самодостаточный target/kotlinbaza.jar. Скрипт сборки также копирует его в out/app.jar для Docker и релизов.
+
+```bash
+java -jar target/kotlinbaza.jar --login alice --password qwerty --action read --resource A.B.C --volume 10
+bash mvnw spring-boot:run -Dspring-boot.run.arguments="--help"
+```
+
+Команды Maven: clean, compile, test, package, install. Первый запуск spring-boot:run и JAR выполняется из корня проекта после инициализации БД.
+
+## Архитектура
+
+Исходники находятся в src/main/kotlin/kotlinbaza, тесты в src/test/kotlin/kotlinbaza, настройки в src/main/resources.
+
+- domain содержит модели, интерфейсы репозиториев и правила доступа.
+- application и auth содержат сервисы с внедрением зависимостей через конструкторы.
+- infrastructure содержит JDBC-репозитории с @Repository и хешер с @Component.
+- actions содержит обработчики и реестр действий.
+- BootApplication запускает Spring. ApplicationConfiguration объявляет JDBC-соединение и обработчики через @Bean. CliRunner реализует CommandLineRunner.
+
+Соединение создаётся лениво, поэтому справка доступна без БД. Spring закрывает соединение при закрытии контекста. JDBC statement и result set закрываются через use.
+
+## База и коды завершения
+
+bash scripts/init-db.sh создаёт data/access.mv.db из scripts/init.sql и scripts/fill.sql. Повторный запуск не перезаписывает существующие данные. Переменная KOTLINBAZA_DB_PATH задаёт другой файловый путь без расширения .mv.db.
+
+| Код | Результат |
+|---|---|
+| 0 | Доступ разрешён |
+| 1 | Справка или отсутствуют обязательные аргументы |
+| 2 | Неверный пароль |
+| 3 | Неизвестный пользователь |
+| 4 | Неизвестное действие |
+| 5 | Доступ запрещён |
+| 6 | Ресурс не найден |
+| 7 | Некорректный формат |
+| 8 | Превышен объём |
+| 9 | Ошибка подключения к БД |
+| 10 | Ошибка SQL |
+
+## Логи и тесты
+
+Вывод приложения в консоль ограничен справкой. Banner Spring отключён. SLF4J и Logback пишут в logs/kotlinbaza.log с ротацией. Пароли и аргументы запроса в журнал не записываются.
+
+```bash
+bash scripts/test.sh
+bash scripts/smoke-test.sh
+bash scripts/coverage.sh
+```
+
+Перед отдельным smoke-запуском соберите приложение. coverage.sh выполняет сборку Maven, JUnit, CLI-проверки и формирует target/site/jacoco/jacoco.xml. CLI-тесты используют отдельную базу в out. Команды сборки Maven показывают свой технический вывод; собранное приложение работает без логов в консоли.
+
+## Docker и CI/CD
+
+Основная ветка main. CI запускается для PR в main, CD для push в main. Проверки того же коммита включают Maven, JUnit, CLI, покрытие и SonarCloud Quality Gate. CD проверяет контейнер на коды 0, 5, 1 до публикации. Образ и архив релиза содержат один проверенный JAR.
 
 ```bash
 bash scripts/build.sh
 docker build -t kotlinbaza:local .
 bash scripts/docker-test.sh kotlinbaza:local
 docker run --rm kotlinbaza:local --login alice --password qwerty --action read --resource A.B.C --volume 10
-echo $?
 ```
 
-Образ содержит JRE 17, приложение, JDBC-драйвер и начальную файловую базу H2. Аргументы передаются через exec ENTRYPOINT, коды завершения Java сохраняются. Изменения базы внутри контейнера с `--rm` не сохраняются после удаления контейнера.
+Docker Hub: https://hub.docker.com/r/skebobv7/kolek
 
-Архив для релиза создаётся командой `bash scripts/package.sh` после сборки. Распакуйте `out/release/kotlinbaza.tar.gz`, выполните `bash scripts/init-db.sh`, затем `bash scripts/run.sh` с аргументами. В архив включены приложение, библиотеки и скрипты инициализации. Это обычный JAR с зависимостями в `lib`, без бонусного fat JAR.
-
-## Авторы
-
-Климов Дмитрий ПИ-241
-
-## Описание
-
-Консольное приложение для проверки доступа пользователя к ресурсам.
-
-Пользователь указывает:
-- логин;
-- пароль;
-- действие (`read`, `write`, `execute`);
-- путь к ресурсу;
-- запрашиваемый объём.
-
-Программа проверяет данные пользователя, существование ресурса, права доступа и допустимый объём. Пользователи, ресурсы и права хранятся в локальной файловой базе H2; доступ к ним выполняется через JDBC.
-
-## Требования
-
-Для сборки и запуска необходимы:
-- установленный JDK 17+ (`java` и `jar` в PATH);
-- компилятор Kotlin (`kotlinc`);
-- библиотеки `kotlinx-cli` и JDBC-драйвер `lib/h2-2.5.252.jar` (включены в проект).
-
-## Сборка
-
-Для сборки проекта используется скрипт:
-
-```bash
-bash scripts/build.sh
-```
-
-После успешной сборки создаётся исполняемый файл `out/app.jar`. Скрипты работают из любой текущей директории.
-
-## Запуск
-
-Перед первым запуском создайте и заполните базу из корня проекта:
-
-```bash
-bash scripts/init-db.sh
-```
-
-База появится в `data/access.mv.db`. Повторная инициализация добавляет отсутствующие стартовые записи, существующие не перезаписывает. Без инициализации приложение вернёт код 9. SQL находится в `scripts/init.sql` и `scripts/fill.sql`.
-
-Приложение можно запустить с помощью скрипта:
-
-```bash
-bash scripts/run.sh --login alice --password qwerty --action read --resource A.B.C --volume 10
-```
-
-Также доступен запуск непосредственно через JAR:
-
-```bash
-java -jar out/app.jar --login alice --password qwerty --action read --resource A.B.C --volume 10
-```
-
-Для просмотра справки:
-
-```bash
-bash scripts/run.sh --help
-```
-
-Или:
-
-```bash
-java -jar out/app.jar --help
-```
-
-## Аргументы командной строки
-
-| Аргумент | Описание | Пример |
-|---|---|---|
-| `--login` | Логин пользователя | `alice` |
-| `--password` | Пароль пользователя | `qwerty` |
-| `--action` | Действие над ресурсом | `read` |
-| `--resource` | Путь к ресурсу | `A.B.C` |
-| `--volume` | Запрашиваемый объём, целое число | `10` |
-| `--help`, `-h` | Вывод справки | `--help` |
-
-## Коды завершения
-
-| Код | Значение |
-|---:|---|
-| `0` | Операция выполнена успешно |
-| `1` | Запрошена справка или отсутствуют обязательные аргументы |
-| `2` | Неверный пароль |
-| `3` | Пользователь не найден |
-| `4` | Неизвестное действие |
-| `5` | Доступ запрещён |
-| `6` | Ресурс не найден |
-| `7` | Некорректный формат данных |
-| `8` | Запрошенный объём превышает допустимый |
-| `9` | Ошибка подключения к базе данных |
-| `10` | Ошибка SQL-запроса |
-
-Приложение не печатает результат: код можно увидеть командой `echo $?` сразу после запуска. Ошибки БД также не выводят текст или stack trace. Справка доступна без базы данных.
-
-По умолчанию используется `./data/access` относительно корня проекта (скрипты сами переходят туда). Для прямого запуска JAR текущей директорией должен быть корень проекта. При необходимости путь к другой локальной базе задаётся переменной `KOTLINBAZA_DB_PATH`, без расширения `.mv.db`:
-
-```bash
-export KOTLINBAZA_DB_PATH=./data/another-access
-bash scripts/init-db.sh
-bash scripts/run.sh --login alice --password qwerty --action read --resource A.B.C --volume 10
-unset KOTLINBAZA_DB_PATH
-```
-
-Файлы базы локальные и исключены из Git; на новой машине база воспроизводится SQL-скриптами. Чтобы сделать бэкап данных, завершите приложение и скопируйте `data/access.mv.db` в отдельную папку.
-
-## Тестирование
-
-Для запуска автоматических тестов используется команда:
-
-```bash
-bash scripts/test.sh
-```
-
-JUnit проверяет прежнюю бизнес-логику и JDBC-репозитории на отдельных временных файловых базах: 56 проверок. Результаты сохраняются в `out/test-results`. Параметризованные сценарии считаются отдельно.
-
-Для проверок CLI после сборки:
-
-```bash
-bash scripts/smoke-test.sh
-```
-
-Smoke-набор создаёт отдельную базу в `out`, проверяет 13 сценариев, включая коды 9/10, отсутствие вывода и изменение данных между запусками. Рабочая база в `data` при тестировании не меняется.
-
-Для запуска обоих наборов с измерением покрытия:
-
-```bash
-bash scripts/coverage.sh
-```
-
-JaCoCo собирает покрытие JUnit и отдельных процессов CLI. XML для SonarCloud сохраняется в `out/coverage/jacoco.xml`, HTML-отчёт в `out/coverage/html/index.html`. В GitHub Actions этот отчёт создаётся перед анализом SonarCloud. JaCoCo подключён вручную, системы сборки не используются.
-
-Используются только `kotlinc`, JDK и Bash (в Windows - Git Bash), без систем сборки. JUnit JAR-файлы находятся в `lib`, загрузка при запуске тестов не нужна. Для компиляции и запуска используется standalone JAR, включающий API, engine и зависимости JUnit. Отдельные API/engine JAR сохранены по требованию ТЗ; добавлять их вместе со standalone в classpath не нужно.
-
-В IntelliJ IDEA каталог `tests` уже отмечен как тестовый, библиотека JUnit5 подключена со scope TEST. Выберите установленный JDK в настройках Project SDK. В Windows добавьте каталог `bin` JDK в PATH, если команда `jar` не найдена.
-
-План БД и ER-диаграмма: [sql-plan.md](../doc/lab6/sql-plan.md). Отчёт предыдущей лабораторной: [testable.md](testable.md). Источники и контрольные суммы зависимостей: [dependencies.md](dependencies.md).
+Secrets: SONAR_TOKEN, DOCKERHUB_USERNAME, DOCKERHUB_TOKEN, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID. Variable DOCKERHUB_REPOSITORY: skebobv7/kolek. Уведомления отправляются в Telegram при успехе и ошибке. Архив out/release/kotlinbaza.tar.gz формируется scripts/package.sh и содержит fat JAR, JDBC-драйвер для инициализации и SQL-скрипты.

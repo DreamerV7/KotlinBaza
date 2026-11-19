@@ -30,6 +30,8 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+target/
+logs/
 
 ### Local H2 database ###
 *.mv.db

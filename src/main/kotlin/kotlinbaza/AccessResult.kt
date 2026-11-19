@@ -1,0 +1,13 @@
+package kotlinbaza
+
+
+enum class AccessResult {
+    SUCCESS,
+    INVALID_PASSWORD,
+    INVALID_LOGIN,
+    UNKNOWN_ACTION,
+    ACCESS_DENIED,
+    RESOURCE_NOT_FOUND,
+    INVALID_FORMAT,
+    VOLUME_EXCEEDED
+}
