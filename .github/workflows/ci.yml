@@ -16,7 +16,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: checked-build
-          path: out
+          path: .
       - run: docker build -t kotlinbaza:check .
       - run: bash scripts/docker-test.sh kotlinbaza:check
   notify:

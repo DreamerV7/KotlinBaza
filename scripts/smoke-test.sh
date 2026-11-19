@@ -58,11 +58,11 @@ echo
 check 9 "Ошибка подключения (отсутствует файл БД), без вывода" \
     env KOTLINBAZA_DB_PATH="$test_dir/missing" bash scripts/run.sh --login alice --password qwerty --action read --resource A --volume 1
 
-java -cp lib/h2-2.5.252.jar org.h2.tools.Shell -url "jdbc:h2:$test_dir/empty" -user sa -password '' -sql 'SELECT 1' >/dev/null || exit 1
+java -cp target/dependency/h2-2.5.252.jar org.h2.tools.Shell -url "jdbc:h2:$test_dir/empty" -user sa -password '' -sql 'SELECT 1' >/dev/null || exit 1
 check 10 "Ошибка SQL (отсутствует схема), без вывода" \
     env KOTLINBAZA_DB_PATH="$test_dir/empty" bash scripts/run.sh --login alice --password qwerty --action read --resource A --volume 1
 
-java -cp lib/h2-2.5.252.jar org.h2.tools.Shell -url "jdbc:h2:$KOTLINBAZA_DB_PATH" -user sa -password '' -sql "UPDATE resources SET max_volume = 0 WHERE path = 'A.B.C'" >/dev/null || exit 1
+java -cp target/dependency/h2-2.5.252.jar org.h2.tools.Shell -url "jdbc:h2:$KOTLINBAZA_DB_PATH" -user sa -password '' -sql "UPDATE resources SET max_volume = 0 WHERE path = 'A.B.C'" >/dev/null || exit 1
 check 8 "Изменение данных в БД влияет на следующий запуск" \
     bash scripts/run.sh --login alice --password qwerty --action read --resource A.B.C --volume 1
 

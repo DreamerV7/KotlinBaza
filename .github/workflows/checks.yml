@@ -14,9 +14,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - uses: fwilhe2/setup-kotlin@v2.0
-        with:
-          version: '2.4.20'
+          cache: maven
       - name: Build and run JUnit and CLI tests
         run: bash scripts/coverage.sh
       - name: SonarCloud analysis and Quality Gate
@@ -32,6 +30,7 @@ jobs:
           name: checked-build
           path: |
             out/app.jar
+            target/dependency/h2-2.5.252.jar
             out/release/kotlinbaza.tar.gz
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
@@ -39,5 +38,5 @@ jobs:
         with:
           name: test-results
           path: |
-            out/test-results
-            out/coverage
+            target/surefire-reports
+            target/site/jacoco

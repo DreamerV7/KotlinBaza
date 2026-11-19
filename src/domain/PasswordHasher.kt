@@ -1,4 +1,0 @@
-
-interface PasswordHasher {
-    fun hash(password: String, salt: String): String
-}
